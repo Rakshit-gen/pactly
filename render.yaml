@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: pactly-api
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: Mongo__ConnectionString
+        sync: false
+      - key: Mongo__DatabaseName
+        value: pactly
+      - key: Jwt__SigningKey
+        sync: false
+      - key: Jwt__Issuer
+        value: pactly
+      - key: Jwt__Audience
+        value: pactly-clients
+      - key: AllowedOrigins__0
+        sync: false

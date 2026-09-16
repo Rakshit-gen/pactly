@@ -1,0 +1,27 @@
+# .NET
+backend/**/bin/
+backend/**/obj/
+*.user
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# Env files
+.env
+.env.local
+.env.*.local
+frontend/.env
+backend/**/appsettings.*.local.json
+
+# Vercel
+frontend/.vercel/
+
+# OS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/

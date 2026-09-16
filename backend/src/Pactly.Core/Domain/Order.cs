@@ -1,3 +1,6 @@
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace Pactly.Core.Domain;
 
 public enum OrderStatus
@@ -17,7 +20,9 @@ public class OrderLine
 
 public class Order
 {
-    public string Id { get; set; } = string.Empty;
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; } = null!;
     public string UserId { get; set; } = string.Empty;
     public List<OrderLine> Lines { get; set; } = new();
     public int SubtotalCents { get; set; }

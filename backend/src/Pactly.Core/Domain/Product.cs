@@ -1,3 +1,6 @@
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace Pactly.Core.Domain;
 
 public enum ProductType
@@ -8,7 +11,9 @@ public enum ProductType
 
 public class Product
 {
-    public string Id { get; set; } = string.Empty;
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; } = null!;
     public string Slug { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

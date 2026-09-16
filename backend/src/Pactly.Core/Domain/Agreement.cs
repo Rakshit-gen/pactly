@@ -1,3 +1,6 @@
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace Pactly.Core.Domain;
 
 public enum AgreementStatus
@@ -18,7 +21,9 @@ public class AuditEntry
 
 public class Agreement
 {
-    public string Id { get; set; } = string.Empty;
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; } = null!;
     public string OrderId { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
     public AgreementStatus Status { get; set; } = AgreementStatus.Draft;

@@ -1,0 +1,36 @@
+name: backend-ci
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore backend/tests/Pactly.Tests/Pactly.Tests.csproj
+
+      - name: Build API
+        run: dotnet build backend/src/Pactly.Api/Pactly.Api.csproj --configuration Release
+
+      - name: Run tests
+        run: dotnet test backend/tests/Pactly.Tests/Pactly.Tests.csproj --configuration Release --logger "trx;LogFileName=test-results.trx"
+
+      - name: Publish test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: backend/tests/Pactly.Tests/TestResults/test-results.trx

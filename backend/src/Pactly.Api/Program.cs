@@ -68,6 +68,7 @@ builder.Services
     .AddQueryType<Query>()
     .AddMutationType<Mutation>()
     .AddType<UserType>()
+    .AddType<CartLineType>()
     .AddAuthorization();
 
 var app = builder.Build();

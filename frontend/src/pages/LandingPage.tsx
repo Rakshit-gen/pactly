@@ -6,6 +6,7 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { Link as RouterLink } from 'react-router-dom';
 import { HeroAgreementMock } from '../components/HeroAgreementMock';
+import { Reveal } from '../components/Reveal';
 import { PRODUCTS_QUERY } from '../graphql/queries';
 import { formatCents } from '../utils/format';
 import type { Product } from '../types';
@@ -77,17 +78,19 @@ export function LandingPage() {
             }}
           >
             {stages.map((stage, index) => (
-              <Box key={stage.label} sx={{ borderTop: '2px solid', borderColor: 'primary.main', pt: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Stage {index + 1}
-                </Typography>
-                <Typography variant="h5" sx={{ mt: 0.5, mb: 1 }}>
-                  {stage.label}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {stage.body}
-                </Typography>
-              </Box>
+              <Reveal key={stage.label} delayMs={index * 140}>
+                <Box sx={{ borderTop: '2px solid', borderColor: 'primary.main', pt: 2 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Stage {index + 1}
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 0.5, mb: 1 }}>
+                    {stage.label}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {stage.body}
+                  </Typography>
+                </Box>
+              </Reveal>
             ))}
           </Box>
         </Container>
@@ -104,30 +107,32 @@ export function LandingPage() {
             </Typography>
 
             <Box sx={{ border: '1px solid', borderColor: 'divider' }}>
-              {plans.map((plan) => (
-                <Box
-                  key={plan.id}
-                  sx={{
-                    display: 'flex',
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    justifyContent: 'space-between',
-                    alignItems: { sm: 'center' },
-                    gap: 1,
-                    px: 3,
-                    py: 2.5,
-                    '&:not(:last-of-type)': { borderBottom: '1px solid', borderColor: 'divider' },
-                  }}
-                >
-                  <Box>
-                    <Typography variant="h6">{plan.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {plan.description}
+              {plans.map((plan, index) => (
+                <Reveal key={plan.id} delayMs={index * 90}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      justifyContent: 'space-between',
+                      alignItems: { sm: 'center' },
+                      gap: 1,
+                      px: 3,
+                      py: 2.5,
+                      borderBottom: index < plans.length - 1 ? '1px solid' : 'none',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="h6">{plan.name}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {plan.description}
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6" sx={{ fontFamily: '"IBM Plex Mono", monospace', whiteSpace: 'nowrap' }}>
+                      {formatCents(plan.monthlyPriceCents)} / mo
                     </Typography>
                   </Box>
-                  <Typography variant="h6" sx={{ fontFamily: '"IBM Plex Mono", monospace', whiteSpace: 'nowrap' }}>
-                    {formatCents(plan.monthlyPriceCents)} / mo
-                  </Typography>
-                </Box>
+                </Reveal>
               ))}
             </Box>
 
@@ -140,16 +145,18 @@ export function LandingPage() {
 
       <Box sx={{ bgcolor: '#14231F', color: '#ECEEE9', py: { xs: 8, md: 10 } }}>
         <Container maxWidth="lg">
-          <Typography variant="h3" sx={{ fontSize: '2rem', mb: 2, color: '#ECEEE9' }}>
-            Set up your first agreement in the next five minutes
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'rgba(236,238,233,0.75)', maxWidth: 520, mb: 4 }}>
-            Create an account, pick a plan, and watch checkout hand you a signed contract instead of just a
-            receipt.
-          </Typography>
-          <Button component={RouterLink} to="/sign-up" variant="contained" size="large" sx={{ bgcolor: '#A8722E', px: 4, py: 1.3, '&:hover': { bgcolor: '#8A5B22' } }}>
-            Start free
-          </Button>
+          <Reveal>
+            <Typography variant="h3" sx={{ fontSize: '2rem', mb: 2, color: '#ECEEE9' }}>
+              Set up your first agreement in the next five minutes
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'rgba(236,238,233,0.75)', maxWidth: 520, mb: 4 }}>
+              Create an account, pick a plan, and watch checkout hand you a signed contract instead of just a
+              receipt.
+            </Typography>
+            <Button component={RouterLink} to="/sign-up" variant="contained" size="large" sx={{ bgcolor: '#A8722E', px: 4, py: 1.3, '&:hover': { bgcolor: '#8A5B22' } }}>
+              Start free
+            </Button>
+          </Reveal>
         </Container>
       </Box>
     </Box>

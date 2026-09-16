@@ -68,9 +68,7 @@ builder.Services
     .AddQueryType<Query>()
     .AddMutationType<Mutation>()
     .AddType<UserType>()
-    .AddAuthorization()
-    .AddFiltering()
-    .AddSorting();
+    .AddAuthorization();
 
 var app = builder.Build();
 

@@ -2,7 +2,7 @@ services:
   - type: web
     name: pactly-api
     env: docker
-    dockerfilePath: ./backend/Dockerfile
+    dockerfilePath: ./Dockerfile
     dockerContext: ./backend
     plan: free
     healthCheckPath: /healthz

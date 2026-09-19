@@ -104,14 +104,22 @@ public class AgreementService
             return;
         }
 
-        var planLine = order.Lines.FirstOrDefault();
-        if (planLine is null)
+        // The plan can be any line: cart order is insertion order, so an
+        // add-on added first must not hide the plan from entitlements.
+        OrderLine? planLine = null;
+        Product? product = null;
+        foreach (var line in order.Lines)
         {
-            return;
+            var candidate = await _productRepository.GetByIdAsync(line.ProductId);
+            if (candidate is { Type: ProductType.Plan })
+            {
+                planLine = line;
+                product = candidate;
+                break;
+            }
         }
 
-        var product = await _productRepository.GetByIdAsync(planLine.ProductId);
-        if (product is null || product.Type != ProductType.Plan)
+        if (planLine is null || product is null)
         {
             return;
         }

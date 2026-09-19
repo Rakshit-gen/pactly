@@ -47,11 +47,15 @@ export function CheckoutPage() {
       return;
     }
     checkoutStarted.current = true;
-    checkout().then(({ data }) => {
-      if (data?.checkout) {
-        setResult(data.checkout);
-      }
-    });
+    checkout()
+      .then(({ data }) => {
+        if (data?.checkout) {
+          setResult(data.checkout);
+        }
+      })
+      .catch(() => {
+        // Surfaced through checkoutError below; don't leave the rejection unhandled.
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -60,8 +64,12 @@ export function CheckoutPage() {
       return;
     }
     const signatureDataUrl = padRef.current.toDataUrl();
-    await signAgreement({ variables: { agreementId: result.agreement.id, signatureDataUrl } });
-    setSigned(true);
+    try {
+      await signAgreement({ variables: { agreementId: result.agreement.id, signatureDataUrl } });
+      setSigned(true);
+    } catch {
+      // Surfaced through signError; stay on the signing screen so the user can retry.
+    }
   };
 
   if (checkingOut) {

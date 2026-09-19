@@ -77,7 +77,7 @@ export function CartPage() {
               </Typography>
               <IconButton
                 aria-label={`Remove ${line.product?.name ?? 'item'} from cart`}
-                onClick={() => removeFromCart({ variables: { productId: line.productId } })}
+                onClick={() => removeFromCart({ variables: { productId: line.productId } }).catch(() => {})}
               >
                 <DeleteOutlineIcon fontSize="small" />
               </IconButton>

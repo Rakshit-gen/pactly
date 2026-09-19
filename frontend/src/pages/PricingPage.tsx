@@ -18,7 +18,7 @@ function PlanRow({ plan }: { plan: Product }) {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [seats, setSeats] = useState(1);
-  const [addToCart, { loading }] = useMutation(ADD_TO_CART_MUTATION, {
+  const [addToCart, { loading, error }] = useMutation(ADD_TO_CART_MUTATION, {
     refetchQueries: [{ query: CART_QUERY }],
   });
 
@@ -27,8 +27,12 @@ function PlanRow({ plan }: { plan: Product }) {
       navigate('/sign-up');
       return;
     }
-    await addToCart({ variables: { productId: plan.id, quantity: seats } });
-    navigate('/cart');
+    try {
+      await addToCart({ variables: { productId: plan.id, quantity: seats } });
+      navigate('/cart');
+    } catch {
+      // rendered from `error` below
+    }
   };
 
   return (
@@ -67,13 +71,20 @@ function PlanRow({ plan }: { plan: Product }) {
             size="small"
             label="Seats"
             value={seats}
-            onChange={(event) => setSeats(Math.max(1, Number(event.target.value) || 1))}
+            onChange={(event) =>
+              setSeats(Math.min(plan.seatLimit ?? Infinity, Math.max(1, Number(event.target.value) || 1)))
+            }
             slotProps={{ htmlInput: { min: 1, max: plan.seatLimit ?? undefined } }}
             sx={{ width: 90 }}
           />
           <Button variant="contained" onClick={handleAdd} disabled={loading}>
             {loading ? <CircularProgress size={20} color="inherit" /> : 'Add to cart'}
           </Button>
+          {error && (
+            <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+              {error.message}
+            </Typography>
+          )}
         </Box>
       </Box>
     </Box>
@@ -83,7 +94,7 @@ function PlanRow({ plan }: { plan: Product }) {
 function AddOnRow({ addOn }: { addOn: Product }) {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [addToCart, { loading }] = useMutation(ADD_TO_CART_MUTATION, {
+  const [addToCart, { loading, error }] = useMutation(ADD_TO_CART_MUTATION, {
     refetchQueries: [{ query: CART_QUERY }],
   });
 
@@ -92,8 +103,12 @@ function AddOnRow({ addOn }: { addOn: Product }) {
       navigate('/sign-up');
       return;
     }
-    await addToCart({ variables: { productId: addOn.id, quantity: 1 } });
-    navigate('/cart');
+    try {
+      await addToCart({ variables: { productId: addOn.id, quantity: 1 } });
+      navigate('/cart');
+    } catch {
+      // rendered from `error` below
+    }
   };
 
   return (
@@ -122,6 +137,11 @@ function AddOnRow({ addOn }: { addOn: Product }) {
         <Button variant="outlined" onClick={handleAdd} disabled={loading}>
           {loading ? <CircularProgress size={20} /> : 'Add'}
         </Button>
+        {error && (
+          <Typography variant="body2" color="error">
+            {error.message}
+          </Typography>
+        )}
       </Box>
     </Box>
   );

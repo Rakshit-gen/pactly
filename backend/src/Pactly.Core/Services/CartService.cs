@@ -52,6 +52,12 @@ public class CartService
             throw new ProductUnavailableException(productId);
         }
 
+        if (product.SeatLimit is int seatLimit && quantity > seatLimit)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(quantity), $"{product.Name} allows at most {seatLimit} seats.");
+        }
+
         var cart = await GetOrCreateCartAsync(userId);
         var existingLine = cart.Lines.FirstOrDefault(l => l.ProductId == productId);
         if (existingLine is not null)

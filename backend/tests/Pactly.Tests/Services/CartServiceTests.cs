@@ -83,4 +83,16 @@ public class CartServiceTests
         Assert.Single(cart.Lines);
         Assert.Equal("p2", cart.Lines[0].ProductId);
     }
+
+    [Fact]
+    public async Task AddToCartAsync_RejectsQuantityAbovePlanSeatLimit()
+    {
+        var plan = MakeProduct();
+        plan.SeatLimit = 5;
+        var service = new CartService(new InMemoryCartRepository(), ProductRepoWith(plan));
+
+        await service.AddToCartAsync("user-1", "p1", 5);
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            service.AddToCartAsync("user-1", "p1", 6));
+    }
 }

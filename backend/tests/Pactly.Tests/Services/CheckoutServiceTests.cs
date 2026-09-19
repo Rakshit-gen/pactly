@@ -133,6 +133,8 @@ public class CheckoutServiceTests
         Assert.Equal(5900, order.SubtotalCents);
         Assert.True(order.ProrationCreditCents > 0);
         Assert.True(order.TotalCents < order.SubtotalCents);
+        // Half the period left: charge 2950 for the new plan, minus 1450 credit for the old one.
+        Assert.InRange(order.TotalCents, 1400, 1600);
     }
 
     [Fact]

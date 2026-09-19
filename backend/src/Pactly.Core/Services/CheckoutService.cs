@@ -103,7 +103,7 @@ public class CheckoutService
 
             var planLine = orderLines.First(l => l.ProductId == planProduct.Id);
             var addOnTotalCents = subtotalCents - (planLine.UnitPriceCents * planLine.Quantity);
-            totalCents = addOnTotalCents + proration.ChargeCents;
+            totalCents = addOnTotalCents + proration.NetCents;
         }
 
         var order = new Order

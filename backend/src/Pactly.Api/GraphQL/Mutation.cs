@@ -67,11 +67,19 @@ public class Mutation
         string signatureDataUrl,
         ClaimsPrincipal claimsPrincipal,
         [Service] AgreementService agreementService,
-        [Service] IUserRepository userRepository)
+        [Service] IUserRepository userRepository,
+        [Service] IAgreementRepository agreementRepository)
     {
         var userId = claimsPrincipal.RequireUserId();
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new GraphQLException("Signed in user no longer exists.");
+
+        // Same not-found answer for "missing" and "someone else's" so ids can't be probed.
+        var agreement = await agreementRepository.GetByIdAsync(agreementId);
+        if (agreement is null || agreement.UserId != userId)
+        {
+            throw new GraphQLException("Agreement not found.");
+        }
 
         return await agreementService.SignAsync(agreementId, user.Email, signatureDataUrl);
     }

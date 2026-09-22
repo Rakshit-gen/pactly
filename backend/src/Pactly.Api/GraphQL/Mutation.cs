@@ -54,11 +54,20 @@ public class Mutation
 
     [Authorize]
     public async Task<CheckoutPayload> Checkout(
+        string idempotencyKey,
         ClaimsPrincipal claimsPrincipal,
         [Service] CheckoutService checkoutService)
     {
-        var (order, agreement) = await checkoutService.CheckoutAsync(claimsPrincipal.RequireUserId());
-        return new CheckoutPayload(order, agreement);
+        try
+        {
+            var (order, agreement) = await checkoutService.CheckoutAsync(claimsPrincipal.RequireUserId(), idempotencyKey);
+            return new CheckoutPayload(order, agreement);
+        }
+        catch (CheckoutInProgressException)
+        {
+            throw new GraphQLException(
+                "This checkout is still being processed. Please wait a moment and try again.");
+        }
     }
 
     [Authorize]

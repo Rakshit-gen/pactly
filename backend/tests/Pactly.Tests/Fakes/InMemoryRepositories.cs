@@ -100,6 +100,47 @@ public class InMemoryOrderRepository : IOrderRepository
     }
 }
 
+public class InMemoryCheckoutIdempotencyRepository : ICheckoutIdempotencyRepository
+{
+    private readonly Dictionary<(string UserId, string Key), CheckoutIdempotencyRecord> _records = new();
+
+    public Task<bool> TryReserveAsync(string userId, string key)
+    {
+        if (_records.ContainsKey((userId, key)))
+        {
+            return Task.FromResult(false);
+        }
+
+        _records[(userId, key)] = new CheckoutIdempotencyRecord
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserId = userId,
+            Key = key,
+            Status = CheckoutIdempotencyStatus.Pending,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+        return Task.FromResult(true);
+    }
+
+    public Task<CheckoutIdempotencyRecord?> FindAsync(string userId, string key) =>
+        Task.FromResult(_records.TryGetValue((userId, key), out var record) ? record : null);
+
+    public Task CompleteAsync(string userId, string key, string orderId, string agreementId)
+    {
+        var record = _records[(userId, key)];
+        record.Status = CheckoutIdempotencyStatus.Completed;
+        record.OrderId = orderId;
+        record.AgreementId = agreementId;
+        return Task.CompletedTask;
+    }
+
+    public Task ReleaseAsync(string userId, string key)
+    {
+        _records.Remove((userId, key));
+        return Task.CompletedTask;
+    }
+}
+
 public class InMemoryAgreementRepository : IAgreementRepository
 {
     private readonly List<Agreement> _agreements = new();

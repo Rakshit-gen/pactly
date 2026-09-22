@@ -20,6 +20,7 @@ builder.Services.AddScoped<IUserRepository, MongoUserRepository>();
 builder.Services.AddScoped<ICartRepository, MongoCartRepository>();
 builder.Services.AddScoped<IOrderRepository, MongoOrderRepository>();
 builder.Services.AddScoped<IAgreementRepository, MongoAgreementRepository>();
+builder.Services.AddScoped<ICheckoutIdempotencyRepository, MongoCheckoutIdempotencyRepository>();
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CatalogService>();

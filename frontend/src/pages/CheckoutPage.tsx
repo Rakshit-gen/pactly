@@ -32,6 +32,10 @@ export function CheckoutPage() {
   const [signed, setSigned] = useState(false);
   const [padEmpty, setPadEmpty] = useState(true);
   const checkoutStarted = useRef(false);
+  // One key per checkout attempt on this page, so a network retry or a double-fire that slips
+  // past the checkoutStarted guard above replays the original order/agreement on the server
+  // instead of checking out twice. A fresh page load (new attempt) gets a fresh key.
+  const idempotencyKeyRef = useRef(crypto.randomUUID());
 
   const [checkout, { loading: checkingOut, error: checkoutError }] = useMutation<CheckoutMutationData>(
     CHECKOUT_MUTATION,
@@ -47,7 +51,7 @@ export function CheckoutPage() {
       return;
     }
     checkoutStarted.current = true;
-    checkout()
+    checkout({ variables: { idempotencyKey: idempotencyKeyRef.current } })
       .then(({ data }) => {
         if (data?.checkout) {
           setResult(data.checkout);

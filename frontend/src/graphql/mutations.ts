@@ -51,8 +51,8 @@ export const REMOVE_FROM_CART_MUTATION = gql`
 `;
 
 export const CHECKOUT_MUTATION = gql`
-  mutation Checkout {
-    checkout {
+  mutation Checkout($idempotencyKey: String!) {
+    checkout(idempotencyKey: $idempotencyKey) {
       order {
         id
         totalCents

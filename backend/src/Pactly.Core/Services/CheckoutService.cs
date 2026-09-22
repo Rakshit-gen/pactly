@@ -12,6 +12,19 @@ public class EmptyCartException : Exception
     }
 }
 
+/// <summary>
+/// Thrown when a checkout is retried with an idempotency key that is still being processed by
+/// another in-flight attempt (rather than one that already completed, which replays instead).
+/// A client should back off and retry, not treat this as a hard failure.
+/// </summary>
+public class CheckoutInProgressException : Exception
+{
+    public CheckoutInProgressException(string idempotencyKey)
+        : base($"A checkout for idempotency key '{idempotencyKey}' is already in progress.")
+    {
+    }
+}
+
 public class CheckoutService
 {
     private readonly ICartRepository _cartRepository;
@@ -19,6 +32,7 @@ public class CheckoutService
     private readonly IOrderRepository _orderRepository;
     private readonly IAgreementRepository _agreementRepository;
     private readonly IUserRepository _userRepository;
+    private readonly ICheckoutIdempotencyRepository _idempotencyRepository;
     private readonly ProrationService _prorationService;
     private readonly AgreementService _agreementService;
 
@@ -28,6 +42,7 @@ public class CheckoutService
         IOrderRepository orderRepository,
         IAgreementRepository agreementRepository,
         IUserRepository userRepository,
+        ICheckoutIdempotencyRepository idempotencyRepository,
         ProrationService prorationService,
         AgreementService agreementService)
     {
@@ -36,11 +51,59 @@ public class CheckoutService
         _orderRepository = orderRepository;
         _agreementRepository = agreementRepository;
         _userRepository = userRepository;
+        _idempotencyRepository = idempotencyRepository;
         _prorationService = prorationService;
         _agreementService = agreementService;
     }
 
-    public async Task<(Order Order, Agreement Agreement)> CheckoutAsync(string userId)
+    /// <summary>
+    /// Turns the caller's cart into an order and a drafted agreement. <paramref name="idempotencyKey"/>
+    /// makes this safe to retry: a client-generated key that's replayed (network retry, double
+    /// click that beat the frontend guard, two tabs) returns the original order and agreement
+    /// instead of checking out twice. A key still in flight raises <see cref="CheckoutInProgressException"/>.
+    /// </summary>
+    public async Task<(Order Order, Agreement Agreement)> CheckoutAsync(string userId, string idempotencyKey)
+    {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            throw new ArgumentException("An idempotency key is required to check out.", nameof(idempotencyKey));
+        }
+
+        if (!await _idempotencyRepository.TryReserveAsync(userId, idempotencyKey))
+        {
+            var existing = await _idempotencyRepository.FindAsync(userId, idempotencyKey);
+            if (existing?.Status == CheckoutIdempotencyStatus.Completed)
+            {
+                var existingOrder = await _orderRepository.GetByIdAsync(existing.OrderId!)
+                    ?? throw new InvalidOperationException(
+                        $"Idempotency record for key '{idempotencyKey}' points at a missing order '{existing.OrderId}'.");
+                var existingAgreement = await _agreementRepository.GetByIdAsync(existing.AgreementId!)
+                    ?? throw new InvalidOperationException(
+                        $"Idempotency record for key '{idempotencyKey}' points at a missing agreement '{existing.AgreementId}'.");
+                return (existingOrder, existingAgreement);
+            }
+
+            // Reserved but not yet completed: a concurrent attempt is mid-flight (or a prior one
+            // crashed before releasing). Either way, running checkout again here would race it.
+            throw new CheckoutInProgressException(idempotencyKey);
+        }
+
+        try
+        {
+            var (order, agreement) = await ExecuteCheckoutAsync(userId);
+            await _idempotencyRepository.CompleteAsync(userId, idempotencyKey, order.Id, agreement.Id);
+            return (order, agreement);
+        }
+        catch
+        {
+            // Don't leave a failed attempt's key permanently stuck in Pending — release it so a
+            // genuine retry (not a duplicate of a successful checkout) can proceed.
+            await _idempotencyRepository.ReleaseAsync(userId, idempotencyKey);
+            throw;
+        }
+    }
+
+    private async Task<(Order Order, Agreement Agreement)> ExecuteCheckoutAsync(string userId)
     {
         var user = await _userRepository.GetByIdAsync(userId)
             ?? throw new KeyNotFoundException($"User '{userId}' was not found.");

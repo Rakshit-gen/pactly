@@ -88,19 +88,30 @@ public class CheckoutService
             throw new CheckoutInProgressException(idempotencyKey);
         }
 
+        Order order;
+        Agreement agreement;
         try
         {
-            var (order, agreement) = await ExecuteCheckoutAsync(userId);
-            await _idempotencyRepository.CompleteAsync(userId, idempotencyKey, order.Id, agreement.Id);
-            return (order, agreement);
+            (order, agreement) = await ExecuteCheckoutAsync(userId);
         }
         catch
         {
-            // Don't leave a failed attempt's key permanently stuck in Pending — release it so a
-            // genuine retry (not a duplicate of a successful checkout) can proceed.
+            // Nothing durable was recorded against this key yet (order/agreement creation itself
+            // failed) — release it so a genuine retry (not a duplicate of a successful checkout)
+            // can proceed.
             await _idempotencyRepository.ReleaseAsync(userId, idempotencyKey);
             throw;
         }
+
+        // The order and agreement (and the now-cleared cart) are durably committed from here on.
+        // Mark the key Completed before doing anything else, so a failure below — e.g. sending the
+        // agreement for signature — can never cause a retry to discard this record and re-run
+        // checkout against an already-emptied cart. A signature-request failure is the caller's
+        // problem to retry independently, not something that should unwind the checkout itself.
+        await _idempotencyRepository.CompleteAsync(userId, idempotencyKey, order.Id, agreement.Id);
+
+        var sentAgreement = await _agreementService.RequestSignatureAsync(agreement.Id);
+        return (order, sentAgreement);
     }
 
     private async Task<(Order Order, Agreement Agreement)> ExecuteCheckoutAsync(string userId)
@@ -205,9 +216,7 @@ public class CheckoutService
         await _agreementRepository.CreateAsync(agreement);
         await _cartRepository.ClearAsync(userId);
 
-        var sentAgreement = await _agreementService.RequestSignatureAsync(agreement.Id);
-
-        return (order, sentAgreement);
+        return (order, agreement);
     }
 
     private static string BuildContentSnapshot(User user, Order order)

@@ -40,7 +40,13 @@ public class AuthService
             CurrentSeats = 0
         };
 
-        await _userRepository.CreateAsync(user);
+        if (!await _userRepository.CreateAsync(user))
+        {
+            // Lost a race with a concurrent registration for the same email between the check
+            // above and this insert; the storage layer is the source of truth for uniqueness.
+            throw new EmailAlreadyRegisteredException(normalizedEmail);
+        }
+
         return user;
     }
 

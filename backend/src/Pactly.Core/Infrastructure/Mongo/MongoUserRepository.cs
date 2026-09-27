@@ -23,9 +23,17 @@ public class MongoUserRepository : IUserRepository
         return await _context.Users.Find(u => u.Email == email).FirstOrDefaultAsync();
     }
 
-    public async Task CreateAsync(User user)
+    public async Task<bool> CreateAsync(User user)
     {
-        await _context.Users.InsertOneAsync(user);
+        try
+        {
+            await _context.Users.InsertOneAsync(user);
+            return true;
+        }
+        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        {
+            return false;
+        }
     }
 
     public async Task UpdateAsync(User user)

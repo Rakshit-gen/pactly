@@ -34,10 +34,15 @@ public class InMemoryUserRepository : IUserRepository
     public Task<User?> GetByEmailAsync(string email) =>
         Task.FromResult(_users.FirstOrDefault(u => u.Email == email));
 
-    public Task CreateAsync(User user)
+    public Task<bool> CreateAsync(User user)
     {
+        if (_users.Any(u => u.Email == user.Email))
+        {
+            return Task.FromResult(false);
+        }
+
         _users.Add(user);
-        return Task.CompletedTask;
+        return Task.FromResult(true);
     }
 
     public Task UpdateAsync(User user)

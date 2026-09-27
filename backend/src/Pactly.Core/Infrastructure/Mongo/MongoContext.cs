@@ -33,5 +33,12 @@ public class MongoContext
             .Ascending(r => r.Key);
         CheckoutIdempotencyKeys.Indexes.CreateOne(
             new CreateIndexModel<CheckoutIdempotencyRecord>(indexKeys, new CreateIndexOptions { Unique = true }));
+
+        // Enforces at-most-one account per email even under concurrent registrations;
+        // MongoUserRepository.CreateAsync relies on this to detect a race by catching the
+        // duplicate-key write error rather than a separate check-then-insert.
+        var emailIndexKeys = Builders<User>.IndexKeys.Ascending(u => u.Email);
+        Users.Indexes.CreateOne(
+            new CreateIndexModel<User>(emailIndexKeys, new CreateIndexOptions { Unique = true }));
     }
 }
